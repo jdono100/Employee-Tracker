@@ -165,7 +165,67 @@ const viewRoles = function () {
 }
 
 const addRole = function () {
-
+  con.query('SELECT * FROM departments',
+  (err, res) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        type: 'input',
+        name: 'roleName',
+        message: 'Please enter a name for the new role.',
+        validate: (input) => {
+          if (!input) {
+            console.log(chalk.bold.red('A name is required for new roles'));
+            return false;
+          } else {
+            return true;
+          }
+        }
+      },
+      {
+        type: 'input',
+        name: 'roleSalary',
+        message: `Please enter a salary for this role (no '$' needed)`,
+        validate: (input) => {
+          if (isNaN(input)) {
+            console.log(chalk.dim.red('Please enter the number only for salary'))
+            return false;
+          } else {
+            return true;
+          }
+        }
+      },
+      {
+        type: 'list',
+        name: 'roleDepartment',
+        message: 'Please select a department to assign this role to',
+        choices: function() {
+          var deptsArr = [];
+          for (i = 0; i < res.length; i++) {
+            deptsArr.push(res[i].name);
+          }
+          return deptsArr;
+        }
+      }
+    ]).then((response) => {
+      let departmentId;
+      for (n = 0; n < res.length; n++) {
+        if (res[n].name == response.roleDepartment) {
+          departmentId = res[n].id;
+        }
+      }
+      con.query('INSERT INTO roles SET ?',
+      {
+        title: response.roleName,
+        salary: response.roleSalary,
+        departments_id: departmentId
+      }, (err) => {
+        if (err) throw err;
+        console.log(chalk.green(`Role '${response.roleName}' has been added`));
+        init();
+      })
+    })
+  })
 }
 
 const deleteRole = function () {
