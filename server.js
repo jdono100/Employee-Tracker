@@ -131,7 +131,7 @@ const deleteDepartment = function () {
         await inquirer.prompt([{
           type: 'list',
           name: 'deletedDept',
-          message: 'Please choose a department to remove',
+          message: chalk.dim.cyan('Please choose a department to remove'),
           choices: deptNamesArr
         }]).then(async (response) => {
           let deptId;
@@ -229,7 +229,38 @@ const addRole = function () {
 }
 
 const deleteRole = function () {
-
+  con.query('SELECT roles.id, roles.title FROM roles',
+  async (err, res) => {
+    if (err) throw err;
+    if (await res.length === 0) {
+      console.log(chalk.dim.red('No roles to delete'));
+      init();
+    } else {
+      let rolesTitleArr = [];
+      res.forEach((roles) => {
+        rolesTitleArr.push(roles.title);
+      });
+      await inquirer.prompt([{
+        type: 'list',
+        name: 'deletedRole',
+        message: chalk.dim.green('Please choose a role to remove'),
+        choices: rolesTitleArr
+      }]).then(async (response) => {
+        let roleId;
+        await res.forEach((roles) => {
+          if (response.deletedRole === roles.title) {
+            roleId = roles.id;
+          }
+        })
+        con.query('DELETE FROM roles WHERE roles.id = ?',
+          [roleId], (err) => {
+            if (err) throw err;
+            console.log(chalk.green('Role successfully deleted'));
+            init();
+          })
+      })
+    }
+  })
 }
 
 const viewEmployees = function () {
@@ -246,15 +277,124 @@ const viewEmployees = function () {
 }
 
 const viewEmployeesByDept = function() {
-
+  const query = `SELECT employees.first_name, employees.last_name, departments.name AS departments FROM employees LEFT JOIN roles ON employees.roles_id = roles.id LEFT JOIN departments ON roles.departments_id = departments.id`;
+  con.query(query, (err, res) => {
+    if (err) throw err;
+    if (res.length === 0) {
+      console.log(chalk.dim.red('No employees added yet'));
+    } else {
+      console.table('Employees by Department:', res);
+    }
+    init();
+  })
 }
 
 const addEmployee = function () {
-
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'firstName',
+      message: chalk.magenta(`Please enter the employee's first name`),
+      validate: (input) => {
+        if (input) {
+          return true;
+        } else {
+          console.log(chalk.dim.red('A first name is required to add an employee'));
+          return false;
+        }
+      }
+    },
+    {
+      type: 'input',
+      name: 'lastName',
+      message: chalk.magenta(`Please enter the employee's last name`),
+      validate: (input) => {
+        if (input) {
+          return true;
+        } else {
+          console.log(chalk.dim.red('A last name is require to add an employee'));
+          return false;
+        }
+      }
+    }
+  ]).then((response) => {
+    const emp = [response.firstName, response.lastName];
+    con.query('SELECT roles.id, roles.title FROM roles',
+    async (err, res) => {
+      if (err) throw err;
+      const roles = await res.map(({ id, title }) => ({name: title, value: id}));
+      await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'empRole',
+          message: chalk.magenta('Please choose a role for the employee'),
+          choices: roles
+        }
+      ]).then((selection) => {
+        const employeeRole = selection.empRole;
+        emp.push(employeeRole);
+        con.query('SELECT * FROM employees',
+        async (err, res) => {
+          if (err) throw err;
+          const managers = await res.map(({ id, first_name, last_name, }) => ({ name: first_name + " " + last_name, value: id }));
+          inquirer.prompt([
+            {
+              type: 'list',
+              name: 'empManager',
+              message: chalk.magenta('Please select a manager for the employee'),
+              choices: managers
+            }
+          ]).then((selection) => {
+            const employeeManager = selection.empManager;
+            emp.push(employeeManager);
+            con.query('INSERT INTO employees (first_name, last_name, roles_id, manager_id) VALUES (?, ?, ?, ?)',
+            emp, (err) => {
+              if (err) throw err;
+              console.log(chalk.magenta(`Employee successfully added`));
+              init();
+            })
+          })
+        })
+      })
+    })
+  })
 }
 
 const deleteEmployee = function () {
-
+  con.query('SELECT employees.id, employees.first_name, employees.last_name FROM employees',
+  async (err, res) => {
+    if (err) throw err;
+    if (await res.length === 0) {
+      console.log(chalk.dim.red('No employees to delete'));
+      init();
+    } else {
+      let empNameArr = [];
+      res.forEach((employees) => {
+        empNameArr.push(`${employees.first_name} ${employees.last_name}`);
+      })
+      await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'deletedEmployee',
+          message: chalk.dim.magenta('Please select an employee to delete'),
+          choices: empNameArr
+        }
+      ]).then(async (response) => {
+        let empId;
+        await response.forEach((employees) => {
+          if (response.deletedEmployee === `${employees.first_name} ${employees.last_name}`) {
+            empId = employees.id;
+          }
+        })
+        con.query('DELETE FROM employees WHERE employees.id = ?',
+        [empId], (err) => {
+          if (err) throw err;
+          console.log(chalk.magenta('Employee successfully deleted'));
+          init();
+        })
+      })
+    }
+  })
 }
 
 const exitApp = function () {

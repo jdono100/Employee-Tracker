@@ -20,7 +20,8 @@ CREATE TABLE employees(
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     roles_id INTEGER NOT NULL,
-    CONSTRAINT fk_roles FOREIGN KEY (roles_id) REFERENCES roles(id),
+    manager_id INTEGER,
+    CONSTRAINT fk_roles FOREIGN KEY (roles_id) REFERENCES roles(id)
 );
 
 SELECT * FROM departments;
