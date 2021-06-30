@@ -381,7 +381,7 @@ const deleteEmployee = function () {
         }
       ]).then(async (response) => {
         let empId;
-        await response.forEach((employees) => {
+        await res.forEach((employees) => {
           if (response.deletedEmployee === `${employees.first_name} ${employees.last_name}`) {
             empId = employees.id;
           }
