@@ -7,6 +7,8 @@
 
 A CLI JavaScript app that can keep track of a large number of employees and their roles/departments. Made using the node packages inquirer, MySQL, chalk, and console.table.
 
+[Watch a walkthrough of the app here](https://youtu.be/no9Q3IkftSM)
+
 
 ## Installation
 
